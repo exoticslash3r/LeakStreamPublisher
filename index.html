@@ -1,535 +1,387 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LeakStream Publisher</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Arial, sans-serif; background: #000; color: #fff; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publish Content - LeakStream</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-.container {
-max-width: 800px;
-margin: 0 auto;
-padding: 20px;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-.header {
-text-align: center;
-margin-bottom: 30px;
-padding-bottom: 20px;
-border-bottom: 1px solid #333;
-}
+        .publish-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
 
-.logo {
-font-size: 2rem;
-font-weight: bold;
-color: #fff;
-text-transform: uppercase;
-letter-spacing: 3px;
-margin-bottom: 10px;
-}
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5rem;
+        }
 
-.subtitle {
-color: #666;
-font-size: 0.9rem;
-}
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-.post-form {
-background: #111;
-padding: 30px;
-border: 1px solid #333;
-border-radius: 10px;
-margin-bottom: 30px;
-}
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
 
-.form-group {
-margin-bottom: 20px;
-}
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
 
-.form-group label {
-display: block;
-margin-bottom: 8px;
-color: #fff;
-font-weight: bold;
-}
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
-width: 100%;
-padding: 12px;
-background: #000;
-border: 1px solid #333;
-color: #fff;
-font-size: 1rem;
-border-radius: 5px;
-}
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
 
-.form-group textarea {
-height: 100px;
-resize: vertical;
-}
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 5px;
+            display: block;
+        }
 
-.url-inputs {
-display: grid;
-grid-template-columns: 1fr auto;
-gap: 10px;
-align-items: center;
-}
+        .hoster-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
 
-.btn {
-padding: 12px 24px;
-background: #000;
-color: #fff;
-border: 1px solid #333;
-cursor: pointer;
-font-size: 1rem;
-border-radius: 5px;
-transition: all 0.3s;
-font-weight: bold;
-}
+        .hoster-link {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
 
-.btn:hover {
-background: #222;
-}
+        .hoster-link:hover {
+            background: #764ba2;
+        }
 
-.btn-primary {
-background: #0066cc;
-border-color: #0066cc;
-width: 100%;
-padding: 15px;
-margin-top: 20px;
-}
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
 
-.btn-primary:hover {
-background: #0052a3;
-}
+        .submit-btn:hover {
+            background: #45a049;
+        }
 
-.btn-primary:disabled {
-background: #555;
-border-color: #555;
-cursor: not-allowed;
-}
+        .submit-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
 
-.video-host-link {
-margin-top: 20px;
-padding: 15px;
-background: #1a1a1a;
-border-radius: 5px;
-text-align: center;
-font-size: 0.9rem;
-}
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
 
-.video-host-link a {
-color: #4dabf7;
-text-decoration: none;
-}
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
 
-.video-host-link a:hover {
-text-decoration: underline;
-}
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
 
-.notification {
-position: fixed;
-top: 20px;
-right: 20px;
-background: #fff;
-color: #000;
-padding: 15px 25px;
-border-radius: 5px;
-display: none;
-z-index: 1000;
-animation: slideIn 0.3s;
-font-weight: bold;
-}
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
 
-@keyframes slideIn {
-from { transform: translateX(100%); opacity: 0; }
-to { transform: translateX(0); opacity: 1; }
-}
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
 
-.warning {
-background: #ff9900;
-color: #000;
-padding: 10px;
-border-radius: 5px;
-margin-bottom: 20px;
-font-size: 0.9rem;
-}
-
-.warning strong {
-display: block;
-margin-bottom: 5px;
-}
-
-.status-indicator {
-text-align: center;
-margin-bottom: 20px;
-padding: 10px;
-border-radius: 5px;
-font-size: 0.9rem;
-}
-
-.status-online {
-background: #1a531b;
-color: #90ee90;
-}
-
-.status-offline {
-background: #5a1a1a;
-color: #ff6b6b;
-}
-</style>
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-<div class="header">
-<div class="logo">LeakStream Publisher</div>
-<div class="subtitle">Post content that appears on the main viewer site</div>
-</div>
+    <div class="publish-container">
+        <h1>📤 Publish Content</h1>
+        
+        <form id="publishForm">
+            <div class="form-group">
+                <label for="title">Title *</label>
+                <input type="text" id="title" required maxlength="100" placeholder="Enter a descriptive title">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description *</label>
+                <textarea id="description" required maxlength="500" placeholder="Describe your content"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="type">Content Type *</label>
+                <select id="type" required>
+                    <option value="">Select type</option>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="link">Link</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="link">Direct Link *</label>
+                <input type="url" id="link" required placeholder="https://example.com/path/to/content">
+                <span class="upload-hint">Paste the direct link to your content here</span>
+                
+                <div class="hoster-links">
+                    <a href="https://imagekit.io/dashboard/media-library" target="_blank" class="hoster-link">
+                        Upload Videos/Images
+                    </a>
+                    <a href="https://imgbb.com/" target="_blank" class="hoster-link">
+                        Upload Images
+                    </a>
+                </div>
+                
+                <span class="upload-hint">
+                    Note: Upload your content to one of the hosters above, then paste the direct link here
+                </span>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn">Publish Content</button>
+        </form>
+        
+        <div id="statusMessage" class="status-message"></div>
+        <a href="index.html" class="back-link">← Back to Viewer</a>
+    </div>
 
-<div class="status-indicator" id="statusIndicator">
-🔌 Connecting to database...
-</div>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyTSyWhLVe22jynP94cp9OEg6IC5-OhdE",
+            authDomain: "leakstream-4f62f.firebaseapp.com",
+            projectId: "leakstream-4f62f",
+            storageBucket: "leakstream-4f62f.firebasestorage.app",
+            messagingSenderId: "886997714546",
+            appId: "1:886997714546:web:b7fcbb9b28010d5ec564eb",
+            measurementId: "G-RXHE019ZWT"
+        };
 
-<div class="warning">
-<strong>⚠️ ANTI-SPAM SYSTEM ACTIVE:</strong>
-• Max 1 post every 10 seconds<br>
-• Duplicate titles/URLs will result in timeout<br>
-• Spamming = 24 hour ban
-</div>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-<div class="post-form">
-<div class="form-group">
-<label for="postTitle">Post Title *</label>
-<input type="text" id="postTitle" placeholder="Enter post title" required maxlength="100">
-</div>
+        // Check for user timeout
+        function checkTimeout() {
+            const timeoutEnd = localStorage.getItem('timeoutEnd');
+            if (timeoutEnd && Date.now() < parseInt(timeoutEnd)) {
+                window.location.href = 'index.html';
+                return true;
+            }
+            return false;
+        }
 
-<div class="form-group">
-<label for="postContent">Description (Optional)</label>
-<textarea id="postContent" placeholder="Enter description (optional)" maxlength="500"></textarea>
-</div>
+        // Spam detection
+        async function checkSpam(userId, link) {
+            try {
+                // Check for duplicate links in last 24 hours
+                const duplicatePosts = await db.collection('posts')
+                    .where('userId', '==', userId)
+                    .where('link', '==', link)
+                    .where('timestamp', '>', new Date(Date.now() - 24 * 60 * 60 * 1000))
+                    .get();
+                
+                if (duplicatePosts.size >= 5) {
+                    return {
+                        isSpam: true,
+                        reason: 'Duplicate content posted 5+ times'
+                    };
+                }
+                
+                // Check user's posting frequency
+                const recentPosts = await db.collection('posts')
+                    .where('userId', '==', userId)
+                    .where('timestamp', '>', new Date(Date.now() - 60 * 60 * 1000)) // Last hour
+                    .get();
+                
+                if (recentPosts.size >= 10) {
+                    return {
+                        isSpam: true,
+                        reason: 'Posting too frequently (10+ posts/hour)'
+                    };
+                }
+                
+                return { isSpam: false };
+            } catch (error) {
+                console.error('Error checking spam:', error);
+                return { isSpam: false };
+            }
+        }
 
-<div class="form-group">
-<label for="mediaType">Content Type *</label>
-<select id="mediaType" required>
-<option value="video">Video</option>
-<option value="image">Image</option>
-<option value="link">Link Only</option>
-</select>
-</div>
+        // Initialize app
+        async function initializeApp() {
+            if (checkTimeout()) return;
+            
+            try {
+                // Sign in anonymously
+                await auth.signInAnonymously();
+                setupForm();
+            } catch (error) {
+                console.error('Authentication error:', error);
+                showStatus('Error connecting to database', 'error');
+            }
+        }
 
-<div class="form-group">
-<label for="mediaUrl">Media URL *</label>
-<div class="url-inputs">
-<input type="url" id="mediaUrl" placeholder="https://example.com/video.mp4" required>
-<button class="btn" onclick="testUrl()">Test URL</button>
-</div>
-<small style="color:#666; display:block; margin-top:5px;">Direct links only (mp4, webm, jpg, png, gif)</small>
-</div>
+        // Setup form submission
+        function setupForm() {
+            const form = document.getElementById('publishForm');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const title = document.getElementById('title').value.trim();
+                const description = document.getElementById('description').value.trim();
+                const type = document.getElementById('type').value;
+                const link = document.getElementById('link').value.trim();
+                
+                if (!title || !description || !type || !link) {
+                    showStatus('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                // Validate URL
+                try {
+                    new URL(link);
+                } catch {
+                    showStatus('Please enter a valid URL', 'error');
+                    return;
+                }
+                
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Publishing...';
+                
+                try {
+                    const user = auth.currentUser;
+                    
+                    // Check for spam
+                    const spamCheck = await checkSpam(user.uid, link);
+                    if (spamCheck.isSpam) {
+                        showStatus(`Spam detected: ${spamCheck.reason}. Post blocked.`, 'error');
+                        
+                        // Apply timeout for repeated spam
+                        if (spamCheck.reason.includes('5+ times')) {
+                            localStorage.setItem('timeoutEnd', Date.now() + (24 * 60 * 60 * 1000));
+                        }
+                        
+                        return;
+                    }
+                    
+                    // Create post
+                    await db.collection('posts').add({
+                        title: title,
+                        description: description,
+                        type: type,
+                        link: link,
+                        userId: user.uid,
+                        spamReports: 0,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Show success message
+                    showStatus('Content published successfully! It will appear on the main site shortly.', 'success');
+                    
+                    // Reset form
+                    form.reset();
+                    
+                } catch (error) {
+                    console.error('Error publishing:', error);
+                    showStatus('Error publishing content. Please try again.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Publish Content';
+                }
+            });
+        }
 
-<button class="btn btn-primary" onclick="createPost()" id="publishBtn">Publish to LeakStream</button>
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
 
-<div class="video-host-link">
-<a href="https://imagekit.io/login/?target=%2Fdashboard%2Fmedia-library" target="_blank">
-📹 Need free video hosting? Click here for ImageKit
-</a>
-</div>
-</div>
-</div>
-
-<div class="notification" id="notification"></div>
-
-<script>
-// ===== FIREBASE CONFIG (Your Project Config) =====
-const firebaseConfig = {
-apiKey: "AIzaSyAyTSyWhLVe22jynP94cp9OEg6IC5-OhdE",
-authDomain: "leakstream-4f62f.firebaseapp.com",
-projectId: "leakstream-4f62f",
-storageBucket: "leakstream-4f62f.firebasestorage.app",
-messagingSenderId: "886997714546",
-appId: "1:886997714546:web:b7fcbb9b28010d5ec564eb",
-measurementId: "G-RXHE019ZWT"
-};
-
-let db = null;
-let isFirebaseInitialized = false;
-let publishBtn = null;
-
-// ===== ANTI-SPAM SYSTEM =====
-class PublisherSpamDetector {
-constructor() {
-this.userPosts = JSON.parse(localStorage.getItem('publisherPosts') || '[]');
-this.lastPostTime = localStorage.getItem('publisherLastPostTime') || 0;
-this.spamCount = parseInt(localStorage.getItem('publisherSpamCount') || '0');
-this.timeoutUntil = parseInt(localStorage.getItem('publisherTimeoutUntil') || '0');
-}
-
-checkTimeout() {
-const now = Date.now();
-if (this.timeoutUntil > now) {
-return this.timeoutUntil - now;
-}
-return 0;
-}
-
-detectSpam(title, content, mediaUrl) {
-const now = Date.now();
-const timeSinceLastPost = now - this.lastPostTime;
-const timeoutRemaining = this.checkTimeout();
-
-if (timeoutRemaining > 0) {
-return { 
-isSpam: true, 
-reason: `Timeout active. Wait ${Math.ceil(timeoutRemaining / 3600000)} hours` 
-};
-}
-
-// Rate limiting
-if (timeSinceLastPost < 10000) { // 10 seconds
-this.spamCount++;
-localStorage.setItem('publisherSpamCount', this.spamCount);
-if (this.spamCount >= 3) {
-this.timeoutUser(3600000); // 1 hour
-return { isSpam: true, reason: "Posting too fast - 1 hour timeout" };
-}
-return { 
-isSpam: false, 
-warning: `Please wait ${Math.ceil((10000 - timeSinceLastPost)/1000)} seconds` 
-};
-}
-
-// Duplicate detection
-const recentPosts = this.userPosts.slice(-20);
-const duplicateTitle = recentPosts.filter(p =>
-p.title.toLowerCase() === title.toLowerCase()
-).length;
-
-const duplicateUrl = recentPosts.filter(p =>
-p.mediaUrl === mediaUrl
-).length;
-
-if (duplicateTitle >= 5) {
-this.timeoutUser(86400000); // 24 hours
-return { isSpam: true, reason: "Duplicate titles (5+ times) - 24 hour ban" };
-}
-
-if (duplicateUrl >= 5) {
-this.timeoutUser(86400000); // 24 hours
-return { isSpam: true, reason: "Duplicate URLs (5+ times) - 24 hour ban" };
-}
-
-// Reset spam counter if posting normally
-if (this.spamCount > 0) {
-this.spamCount = 0;
-localStorage.setItem('publisherSpamCount', this.spamCount);
-}
-
-// Update last post time
-this.lastPostTime = now;
-localStorage.setItem('publisherLastPostTime', this.lastPostTime);
-
-// Save post
-this.userPosts.push({ 
-title, 
-content, 
-mediaUrl, 
-timestamp: now 
-});
-if (this.userPosts.length > 50) {
-this.userPosts = this.userPosts.slice(-50);
-}
-localStorage.setItem('publisherPosts', JSON.stringify(this.userPosts));
-
-return { isSpam: false };
-}
-
-timeoutUser(duration) {
-this.timeoutUntil = Date.now() + duration;
-localStorage.setItem('publisherTimeoutUntil', this.timeoutUntil);
-}
-
-clearTimeout() {
-this.timeoutUntil = 0;
-localStorage.removeItem('publisherTimeoutUntil');
-}
-}
-
-const spamDetector = new PublisherSpamDetector();
-
-// ===== INITIALIZE FIREBASE =====
-function initFirebase() {
-const statusIndicator = document.getElementById('statusIndicator');
-publishBtn = document.getElementById('publishBtn');
-
-// Check for existing timeout on load
-const timeoutRemaining = spamDetector.checkTimeout();
-if (timeoutRemaining > 0) {
-publishBtn.disabled = true;
-publishBtn.textContent = `TIMED OUT (${Math.ceil(timeoutRemaining / 3600000)}h)`;
-publishBtn.style.background = '#ff0000';
-statusIndicator.className = 'status-indicator status-offline';
-statusIndicator.textContent = '❌ Publisher is timed out';
-}
-
-// Load Firebase SDKs
-if (typeof firebase === 'undefined') {
-statusIndicator.textContent = '📥 Loading Firebase...';
-    
-// Load Firebase App
-const script1 = document.createElement('script');
-script1.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
-script1.onload = () => {
-statusIndicator.textContent = '📥 Loading Firestore...';
-// Load Firestore
-const script2 = document.createElement('script');
-script2.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js';
-script2.onload = setupFirebase;
-document.head.appendChild(script2);
-};
-script1.onerror = () => {
-statusIndicator.className = 'status-indicator status-offline';
-statusIndicator.textContent = '❌ Failed to load Firebase';
-};
-document.head.appendChild(script1);
-} else {
-setupFirebase();
-}
-}
-
-function setupFirebase() {
-const statusIndicator = document.getElementById('statusIndicator');
-try {
-firebase.initializeApp(firebaseConfig);
-db = firebase.firestore();
-isFirebaseInitialized = true;
-statusIndicator.className = 'status-indicator status-online';
-statusIndicator.textContent = '✅ Connected to LeakStream database';
-console.log('Firebase initialized successfully');
-} catch (error) {
-console.error('Firebase initialization error:', error);
-statusIndicator.className = 'status-indicator status-offline';
-statusIndicator.textContent = '❌ Database connection failed';
-showNotification("Database connection failed: " + error.message, true);
-}
-}
-
-// ===== POST CREATION =====
-async function createPost() {
-if (!isFirebaseInitialized) {
-showNotification("Database not connected yet. Please wait...", true);
-return;
-}
-
-const title = document.getElementById('postTitle').value.trim();
-const content = document.getElementById('postContent').value.trim();
-const mediaUrl = document.getElementById('mediaUrl').value.trim();
-const mediaType = document.getElementById('mediaType').value;
-
-// Validation
-if (!title) {
-showNotification("Please enter a title", true);
-return;
-}
-
-if (!mediaUrl && mediaType !== 'link') {
-showNotification("Please enter a media URL", true);
-return;
-}
-
-if (mediaUrl && !mediaUrl.startsWith('http')) {
-showNotification("URL must start with http:// or https://", true);
-return;
-}
-
-// Spam check
-const spamCheck = spamDetector.detectSpam(title, content, mediaUrl);
-if (spamCheck.isSpam) {
-showNotification(`SPAM DETECTED: ${spamCheck.reason}`, true);
-if (publishBtn) {
-publishBtn.disabled = true;
-publishBtn.textContent = 'BLOCKED';
-publishBtn.style.background = '#ff0000';
-}
-return;
-}
-
-if (spamCheck.warning) {
-showNotification(spamCheck.warning, false);
-}
-
-// Disable button during submission
-const originalText = publishBtn.textContent;
-publishBtn.disabled = true;
-publishBtn.textContent = 'Publishing...';
-
-try {
-const postData = {
-title,
-content,
-mediaUrl,
-mediaType,
-timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-votes: 0,
-reported: false
-};
-
-// Add to Firestore
-await db.collection('posts').add(postData);
-
-// Clear form
-document.getElementById('postTitle').value = '';
-document.getElementById('postContent').value = '';
-document.getElementById('mediaUrl').value = '';
-
-showNotification("✅ Post published successfully! It will appear on the main site.");
-
-} catch (error) {
-console.error("Post error:", error);
-showNotification("Error publishing post: " + error.message, true);
-} finally {
-// Re-enable button
-publishBtn.disabled = false;
-publishBtn.textContent = originalText;
-}
-}
-
-function testUrl() {
-const url = document.getElementById('mediaUrl').value.trim();
-if (!url) {
-showNotification("Please enter a URL first", true);
-return;
-}
-
-if (!url.startsWith('http')) {
-showNotification("Invalid URL. Must start with http:// or https://", true);
-return;
-}
-
-// Simple URL validation
-try {
-new URL(url);
-showNotification("✅ URL format is valid");
-} catch (e) {
-showNotification("Invalid URL format", true);
-}
-}
-
-// ===== NOTIFICATION =====
-function showNotification(message, isError = false) {
-const notification = document.getElementById('notification');
-notification.textContent = message;
-notification.style.background = isError ? '#ff4444' : '#51cf66';
-notification.style.display = 'block';
-
-setTimeout(() => {
-notification.style.display = 'none';
-}, 3000);
-}
-
-// ===== INITIALIZE =====
-document.addEventListener('DOMContentLoaded', initFirebase);
-</script>
+        // Initialize on load
+        window.addEventListener('load', initializeApp);
+    </script>
 </body>
 </html>
