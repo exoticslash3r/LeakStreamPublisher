@@ -106,6 +106,12 @@ margin-top: 20px;
 background: #0052a3;
 }
 
+.btn-primary:disabled {
+background: #555;
+border-color: #555;
+cursor: not-allowed;
+}
+
 .video-host-link {
 margin-top: 20px;
 padding: 15px;
@@ -156,6 +162,24 @@ font-size: 0.9rem;
 display: block;
 margin-bottom: 5px;
 }
+
+.status-indicator {
+text-align: center;
+margin-bottom: 20px;
+padding: 10px;
+border-radius: 5px;
+font-size: 0.9rem;
+}
+
+.status-online {
+background: #1a531b;
+color: #90ee90;
+}
+
+.status-offline {
+background: #5a1a1a;
+color: #ff6b6b;
+}
 </style>
 </head>
 <body>
@@ -163,6 +187,10 @@ margin-bottom: 5px;
 <div class="header">
 <div class="logo">LeakStream Publisher</div>
 <div class="subtitle">Post content that appears on the main viewer site</div>
+</div>
+
+<div class="status-indicator" id="statusIndicator">
+🔌 Connecting to database...
 </div>
 
 <div class="warning">
@@ -201,7 +229,7 @@ margin-bottom: 5px;
 <small style="color:#666; display:block; margin-top:5px;">Direct links only (mp4, webm, jpg, png, gif)</small>
 </div>
 
-<button class="btn btn-primary" onclick="createPost()">Publish to LeakStream</button>
+<button class="btn btn-primary" onclick="createPost()" id="publishBtn">Publish to LeakStream</button>
 
 <div class="video-host-link">
 <a href="https://imagekit.io/login/?target=%2Fdashboard%2Fmedia-library" target="_blank">
@@ -214,7 +242,7 @@ margin-bottom: 5px;
 <div class="notification" id="notification"></div>
 
 <script>
-// ===== FIREBASE CONFIG =====
+// ===== FIREBASE CONFIG (Your Project Config) =====
 const firebaseConfig = {
 apiKey: "AIzaSyAyTSyWhLVe22jynP94cp9OEg6IC5-OhdE",
 authDomain: "leakstream-4f62f.firebaseapp.com",
@@ -226,6 +254,8 @@ measurementId: "G-RXHE019ZWT"
 };
 
 let db = null;
+let isFirebaseInitialized = false;
+let publishBtn = null;
 
 // ===== ANTI-SPAM SYSTEM =====
 class PublisherSpamDetector {
@@ -234,50 +264,40 @@ this.userPosts = JSON.parse(localStorage.getItem('publisherPosts') || '[]');
 this.lastPostTime = localStorage.getItem('publisherLastPostTime') || 0;
 this.spamCount = parseInt(localStorage.getItem('publisherSpamCount') || '0');
 this.timeoutUntil = parseInt(localStorage.getItem('publisherTimeoutUntil') || '0');
-
-this.checkTimeout();
 }
 
 checkTimeout() {
 const now = Date.now();
 if (this.timeoutUntil > now) {
-this.showTimeout(this.timeoutUntil - now);
-return true;
+return this.timeoutUntil - now;
 }
-return false;
-}
-
-showTimeout(remainingTime) {
-alert(`You are timed out for ${Math.ceil(remainingTime / 3600000)} hours for spamming!`);
-document.querySelector('.btn-primary').disabled = true;
-document.querySelector('.btn-primary').textContent = 'TIMED OUT';
-document.querySelector('.btn-primary').style.background = '#ff0000';
-
-setTimeout(() => {
-if (Date.now() >= this.timeoutUntil) {
-location.reload();
-}
-}, remainingTime);
-
-return true;
+return 0;
 }
 
 detectSpam(title, content, mediaUrl) {
 const now = Date.now();
+const timeSinceLastPost = now - this.lastPostTime;
+const timeoutRemaining = this.checkTimeout();
 
-// Check timeout
-if (this.checkTimeout()) {
-return { isSpam: true, reason: "User is timed out" };
+if (timeoutRemaining > 0) {
+return { 
+isSpam: true, 
+reason: `Timeout active. Wait ${Math.ceil(timeoutRemaining / 3600000)} hours` 
+};
 }
 
 // Rate limiting
-if (now - this.lastPostTime < 10000) { // 10 seconds
+if (timeSinceLastPost < 10000) { // 10 seconds
 this.spamCount++;
+localStorage.setItem('publisherSpamCount', this.spamCount);
 if (this.spamCount >= 3) {
 this.timeoutUser(3600000); // 1 hour
-return { isSpam: true, reason: "Posting too fast" };
+return { isSpam: true, reason: "Posting too fast - 1 hour timeout" };
 }
-return { isSpam: false, warning: "Please wait 10 seconds between posts" };
+return { 
+isSpam: false, 
+warning: `Please wait ${Math.ceil((10000 - timeSinceLastPost)/1000)} seconds` 
+};
 }
 
 // Duplicate detection
@@ -292,27 +312,35 @@ p.mediaUrl === mediaUrl
 
 if (duplicateTitle >= 5) {
 this.timeoutUser(86400000); // 24 hours
-return { isSpam: true, reason: "Duplicate titles (5+ times)" };
+return { isSpam: true, reason: "Duplicate titles (5+ times) - 24 hour ban" };
 }
 
 if (duplicateUrl >= 5) {
 this.timeoutUser(86400000); // 24 hours
-return { isSpam: true, reason: "Duplicate URLs (5+ times)" };
+return { isSpam: true, reason: "Duplicate URLs (5+ times) - 24 hour ban" };
 }
 
-// Reset if posting normally
+// Reset spam counter if posting normally
+if (this.spamCount > 0) {
+this.spamCount = 0;
+localStorage.setItem('publisherSpamCount', this.spamCount);
+}
+
+// Update last post time
 this.lastPostTime = now;
-if (this.spamCount > 0) this.spamCount = Math.max(0, this.spamCount - 1);
+localStorage.setItem('publisherLastPostTime', this.lastPostTime);
 
 // Save post
-this.userPosts.push({ title, content, mediaUrl, timestamp: now });
+this.userPosts.push({ 
+title, 
+content, 
+mediaUrl, 
+timestamp: now 
+});
 if (this.userPosts.length > 50) {
 this.userPosts = this.userPosts.slice(-50);
 }
-
 localStorage.setItem('publisherPosts', JSON.stringify(this.userPosts));
-localStorage.setItem('publisherLastPostTime', this.lastPostTime);
-localStorage.setItem('publisherSpamCount', this.spamCount);
 
 return { isSpam: false };
 }
@@ -320,7 +348,11 @@ return { isSpam: false };
 timeoutUser(duration) {
 this.timeoutUntil = Date.now() + duration;
 localStorage.setItem('publisherTimeoutUntil', this.timeoutUntil);
-this.showTimeout(duration);
+}
+
+clearTimeout() {
+this.timeoutUntil = 0;
+localStorage.removeItem('publisherTimeoutUntil');
 }
 }
 
@@ -328,36 +360,68 @@ const spamDetector = new PublisherSpamDetector();
 
 // ===== INITIALIZE FIREBASE =====
 function initFirebase() {
-try {
+const statusIndicator = document.getElementById('statusIndicator');
+publishBtn = document.getElementById('publishBtn');
+
+// Check for existing timeout on load
+const timeoutRemaining = spamDetector.checkTimeout();
+if (timeoutRemaining > 0) {
+publishBtn.disabled = true;
+publishBtn.textContent = `TIMED OUT (${Math.ceil(timeoutRemaining / 3600000)}h)`;
+publishBtn.style.background = '#ff0000';
+statusIndicator.className = 'status-indicator status-offline';
+statusIndicator.textContent = '❌ Publisher is timed out';
+}
+
+// Load Firebase SDKs
 if (typeof firebase === 'undefined') {
+statusIndicator.textContent = '📥 Loading Firebase...';
+    
+// Load Firebase App
 const script1 = document.createElement('script');
 script1.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
 script1.onload = () => {
+statusIndicator.textContent = '📥 Loading Firestore...';
+// Load Firestore
 const script2 = document.createElement('script');
 script2.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js';
 script2.onload = setupFirebase;
 document.head.appendChild(script2);
 };
+script1.onerror = () => {
+statusIndicator.className = 'status-indicator status-offline';
+statusIndicator.textContent = '❌ Failed to load Firebase';
+};
 document.head.appendChild(script1);
 } else {
 setupFirebase();
 }
-} catch (error) {
-showNotification("Firebase error: " + error.message, true);
-}
 }
 
 function setupFirebase() {
+const statusIndicator = document.getElementById('statusIndicator');
 try {
 firebase.initializeApp(firebaseConfig);
 db = firebase.firestore();
+isFirebaseInitialized = true;
+statusIndicator.className = 'status-indicator status-online';
+statusIndicator.textContent = '✅ Connected to LeakStream database';
+console.log('Firebase initialized successfully');
 } catch (error) {
-showNotification("Database connection failed", true);
+console.error('Firebase initialization error:', error);
+statusIndicator.className = 'status-indicator status-offline';
+statusIndicator.textContent = '❌ Database connection failed';
+showNotification("Database connection failed: " + error.message, true);
 }
 }
 
 // ===== POST CREATION =====
 async function createPost() {
+if (!isFirebaseInitialized) {
+showNotification("Database not connected yet. Please wait...", true);
+return;
+}
+
 const title = document.getElementById('postTitle').value.trim();
 const content = document.getElementById('postContent').value.trim();
 const mediaUrl = document.getElementById('mediaUrl').value.trim();
@@ -383,17 +447,22 @@ return;
 const spamCheck = spamDetector.detectSpam(title, content, mediaUrl);
 if (spamCheck.isSpam) {
 showNotification(`SPAM DETECTED: ${spamCheck.reason}`, true);
+if (publishBtn) {
+publishBtn.disabled = true;
+publishBtn.textContent = 'BLOCKED';
+publishBtn.style.background = '#ff0000';
+}
 return;
 }
 
 if (spamCheck.warning) {
-showNotification(spamCheck.warning, true);
+showNotification(spamCheck.warning, false);
 }
 
-if (!db) {
-showNotification("Database not connected", true);
-return;
-}
+// Disable button during submission
+const originalText = publishBtn.textContent;
+publishBtn.disabled = true;
+publishBtn.textContent = 'Publishing...';
 
 try {
 const postData = {
@@ -406,6 +475,7 @@ votes: 0,
 reported: false
 };
 
+// Add to Firestore
 await db.collection('posts').add(postData);
 
 // Clear form
@@ -413,11 +483,15 @@ document.getElementById('postTitle').value = '';
 document.getElementById('postContent').value = '';
 document.getElementById('mediaUrl').value = '';
 
-showNotification("Post published successfully! It will appear on the main site.");
+showNotification("✅ Post published successfully! It will appear on the main site.");
 
 } catch (error) {
 console.error("Post error:", error);
 showNotification("Error publishing post: " + error.message, true);
+} finally {
+// Re-enable button
+publishBtn.disabled = false;
+publishBtn.textContent = originalText;
 }
 }
 
@@ -433,7 +507,13 @@ showNotification("Invalid URL. Must start with http:// or https://", true);
 return;
 }
 
-showNotification("URL format is valid");
+// Simple URL validation
+try {
+new URL(url);
+showNotification("✅ URL format is valid");
+} catch (e) {
+showNotification("Invalid URL format", true);
+}
 }
 
 // ===== NOTIFICATION =====
