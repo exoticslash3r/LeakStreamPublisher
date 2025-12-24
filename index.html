@@ -16,10 +16,6 @@
             font-family: 'Arial', sans-serif;
             background: #000;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
             color: #fff;
             position: relative;
             overflow: hidden;
@@ -50,16 +46,46 @@
             }
         }
 
+        /* Scrollable container */
+        .page-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
         .publish-container {
             background: rgba(20, 20, 20, 0.95);
             border-radius: 0;
-            padding: 50px;
+            padding: 40px;
             width: 100%;
             max-width: 700px;
+            max-height: 90vh;
             box-shadow: 0 0 50px rgba(255, 0, 0, 0.3);
             border: 3px solid #800;
             position: relative;
             z-index: 2;
+            overflow-y: auto;
+            margin: auto;
+        }
+
+        .publish-container::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .publish-container::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .publish-container::-webkit-scrollbar-thumb {
+            background: #800;
+        }
+
+        .publish-container::-webkit-scrollbar-thumb:hover {
+            background: #a00;
         }
 
         .publish-container::before {
@@ -77,9 +103,9 @@
 
         h1 {
             color: #fff;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             text-align: center;
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-family: 'UnifrakturMaguntia', cursive;
             text-transform: uppercase;
             letter-spacing: 5px;
@@ -144,10 +170,12 @@
             display: flex;
             gap: 15px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .hoster-link {
             flex: 1;
+            min-width: 250px;
             text-align: center;
             padding: 15px;
             background: #004400;
@@ -306,7 +334,7 @@
             color: #f00;
         }
 
-        /* Scrollbar styling */
+        /* Body scrollbar */
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -322,61 +350,108 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a00;
         }
+
+        /* Responsive adjustments */
+        @media (max-height: 800px) {
+            .publish-container {
+                max-height: 85vh;
+                padding: 30px;
+            }
+            
+            h1 {
+                font-size: 3rem;
+                margin-bottom: 20px;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .publish-container {
+                padding: 20px;
+                max-height: 95vh;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+                letter-spacing: 3px;
+            }
+            
+            .hoster-link {
+                min-width: 100%;
+            }
+            
+            .submit-btn {
+                padding: 15px;
+                font-size: 1.3rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="publish-container">
-        <h1>Publish Content</h1>
-        
-        <form id="publishForm">
-            <div class="form-group">
-                <label for="title" class="required">Title</label>
-                <input type="text" id="title" required maxlength="100" placeholder="Enter a descriptive title">
-                <span class="upload-hint warning-hint">Keep it descriptive but concise</span>
-            </div>
+    <!-- Blood rain effect -->
+    <div class="blood-drop"></div>
+    <div class="blood-drop"></div>
+    <div class="blood-drop"></div>
+    <div class="blood-drop"></div>
+    <div class="blood-drop"></div>
+    
+    <div class="page-container">
+        <div class="publish-container">
+            <h1>Publish Content</h1>
             
-            <div class="form-group">
-                <label for="description" class="required">Description</label>
-                <textarea id="description" required maxlength="500" placeholder="Describe your content"></textarea>
-                <span class="upload-hint">Maximum 500 characters</span>
-            </div>
-            
-            <div class="form-group">
-                <label for="type" class="required">Content Type</label>
-                <select id="type" required>
-                    <option value="">Select type</option>
-                    <option value="image">Image</option>
-                    <option value="video">Video</option>
-                    <option value="link">Link</option>
-                </select>
-                <span class="upload-hint">Choose the type of content you're sharing</span>
-            </div>
-            
-            <div class="form-group">
-                <label for="link" class="required">Direct Link</label>
-                <input type="url" id="link" required placeholder="https://example.com/path/to/content">
-                <span class="upload-hint warning-hint">Paste the DIRECT link to your content</span>
-                
-                <div class="hoster-links">
-                    <a href="https://imagekit.io/dashboard/media-library" target="_blank" class="hoster-link">
-                        Upload Videos/Images
-                    </a>
-                    <a href="https://imgbb.com/" target="_blank" class="hoster-link">
-                        Upload Images
-                    </a>
+            <form id="publishForm">
+                <div class="form-group">
+                    <label for="title" class="required">Title</label>
+                    <input type="text" id="title" required maxlength="100" placeholder="Enter a descriptive title">
+                    <span class="upload-hint warning-hint">Keep it descriptive but concise</span>
                 </div>
                 
-                <span class="upload-hint">
-                    Note: Upload your content to one of the hosters above, then paste the direct link here.
-                    Make sure the link is accessible and direct to the file.
-                </span>
-            </div>
+                <div class="form-group">
+                    <label for="description" class="required">Description</label>
+                    <textarea id="description" required maxlength="500" placeholder="Describe your content"></textarea>
+                    <span class="upload-hint">Maximum 500 characters</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="type" class="required">Content Type</label>
+                    <select id="type" required>
+                        <option value="">Select type</option>
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                        <option value="link">Link</option>
+                    </select>
+                    <span class="upload-hint">Choose the type of content you're sharing</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="link" class="required">Direct Link</label>
+                    <input type="url" id="link" required placeholder="https://example.com/path/to/content">
+                    <span class="upload-hint warning-hint">Paste the DIRECT link to your content</span>
+                    
+                    <div class="hoster-links">
+                        <a href="https://imagekit.io/dashboard/media-library" target="_blank" class="hoster-link">
+                            Upload Videos/Images
+                        </a>
+                        <a href="https://imgbb.com/" target="_blank" class="hoster-link">
+                            Upload Images
+                        </a>
+                    </div>
+                    
+                    <span class="upload-hint">
+                        Note: Upload your content to one of the hosters above, then paste the direct link here.
+                        Make sure the link is accessible and direct to the file.
+                    </span>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">Publish Content</button>
+            </form>
             
-            <button type="submit" class="submit-btn" id="submitBtn">Publish Content</button>
-        </form>
-        
-        <div id="statusMessage" class="status-message"></div>
-        <a href="index.html" class="back-link">Back to Viewer</a>
+            <div id="statusMessage" class="status-message"></div>
+            <a href="index.html" class="back-link">Back to Viewer</a>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -395,13 +470,25 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized successfully");
+            } else {
+                firebase.app();
+                console.log("Firebase already initialized");
+            }
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            showStatus("Error initializing Firebase. Please check console.", "error");
+        }
+        
         const db = firebase.firestore();
         const auth = firebase.auth();
 
         // Create blood rain effect
         function createBloodRain() {
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 30; i++) {
                 let drop = document.createElement('div');
                 drop.className = 'blood-drop';
                 drop.style.left = Math.random() * 100 + 'vw';
@@ -425,12 +512,16 @@
         // Spam detection
         async function checkSpam(userId, link) {
             try {
+                console.log("Checking spam for user:", userId);
+                
                 // Check for duplicate links in last 24 hours
                 const duplicatePosts = await db.collection('posts')
                     .where('userId', '==', userId)
                     .where('link', '==', link)
                     .where('timestamp', '>', new Date(Date.now() - 24 * 60 * 60 * 1000))
                     .get();
+                
+                console.log("Duplicate posts found:", duplicatePosts.size);
                 
                 if (duplicatePosts.size >= 5) {
                     return {
@@ -444,6 +535,8 @@
                     .where('userId', '==', userId)
                     .where('timestamp', '>', new Date(Date.now() - 60 * 60 * 1000)) // Last hour
                     .get();
+                
+                console.log("Recent posts in last hour:", recentPosts.size);
                 
                 if (recentPosts.size >= 10) {
                     return {
@@ -465,12 +558,14 @@
             
             try {
                 // Sign in anonymously
-                await auth.signInAnonymously();
+                const userCredential = await auth.signInAnonymously();
+                console.log("User signed in anonymously:", userCredential.user.uid);
+                
                 setupForm();
                 createBloodRain();
             } catch (error) {
                 console.error('Authentication error:', error);
-                showStatus('Error connecting to database', 'error');
+                showStatus('Error connecting to database. Please refresh the page.', 'error');
             }
         }
 
@@ -512,6 +607,12 @@
                 try {
                     const user = auth.currentUser;
                     
+                    if (!user) {
+                        throw new Error("User not authenticated");
+                    }
+                    
+                    console.log("Checking spam for user:", user.uid);
+                    
                     // Check for spam
                     const spamCheck = await checkSpam(user.uid, link);
                     if (spamCheck.isSpam) {
@@ -528,6 +629,8 @@
                         return;
                     }
                     
+                    console.log("Creating post with data:", { title, description, type, link });
+                    
                     // Create post
                     await db.collection('posts').add({
                         title: title,
@@ -538,6 +641,8 @@
                         spamReports: 0,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    
+                    console.log("Post created successfully");
                     
                     // Show success message
                     showStatus('Content published successfully! It will appear on the main site shortly.', 'success');
@@ -554,6 +659,8 @@
                     console.error('Error publishing:', error);
                     if (error.message.includes('permission-denied')) {
                         showStatus('Permission denied. You may be timed out or blocked.', 'error');
+                    } else if (error.message.includes('User not authenticated')) {
+                        showStatus('Authentication error. Please refresh the page.', 'error');
                     } else {
                         showStatus('Error publishing content. Please try again.', 'error');
                     }
@@ -570,6 +677,9 @@
             statusDiv.textContent = message;
             statusDiv.className = `status-message ${type}`;
             statusDiv.style.display = 'block';
+            
+            // Scroll to status message
+            statusDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
             // Auto-hide success messages after redirect
             if (type === 'success') {
