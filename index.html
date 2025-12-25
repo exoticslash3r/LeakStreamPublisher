@@ -187,10 +187,18 @@
         }
 
         .preview-content {
-            max-width: 100%;
+            width: 100%;
             max-height: 250px;
             display: block;
             margin: 0 auto;
+            object-fit: contain;
+        }
+
+        video.preview-content {
+            width: 100%;
+            height: auto;
+            max-height: 250px;
+            background: #000;
         }
 
         .post-count {
@@ -262,10 +270,10 @@
             
             <div class="btn-group">
                 <button type="button" class="btn btn-back" onclick="window.location.href='index.html'">
-                    ← BACK
+                    ← BACK TO FEED
                 </button>
                 <button type="button" class="btn" onclick="publishContent()">
-                    PUBLISH
+                    PUBLISH NOW
                 </button>
             </div>
         </form>
@@ -295,6 +303,7 @@
         // ========== GLOBAL VARIABLES ==========
         const MAX_POSTS_PER_DAY = 5;
         let userPostCount = 0;
+        let publishSound = null;
 
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', function() {
@@ -304,12 +313,23 @@
                     checkDailyPostCount();
                     setupPreview();
                     setupFormValidation();
+                    createPublishSound();
                 })
                 .catch(error => {
                     console.error('Auth error:', error);
                     checkDailyPostCount(); // Check count anyway
                 });
         });
+
+        function createPublishSound() {
+            // Create audio context for alert sound
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                publishSound = new AudioContext();
+            } catch (e) {
+                console.log('Web Audio API not supported');
+            }
+        }
 
         // ========== POST COUNT MANAGEMENT ==========
         function checkDailyPostCount() {
@@ -388,7 +408,7 @@
                     
                     if (contentType === 'video' || url.match(/\.(mp4|webm|mov|avi|mkv)$/i)) {
                         previewHtml = `
-                            <video class="preview-content" controls style="width:100%; max-height:200px;">
+                            <video class="preview-content" controls style="width:100%; background: #000;">
                                 <source src="${url}" type="video/mp4">
                                 Your browser does not support video preview.
                             </video>
@@ -400,7 +420,8 @@
                     } else {
                         previewHtml = `
                             <div style="padding: 20px; text-align: center; color: #ccc;">
-                                Link: ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}
+                                <div style="margin-bottom: 10px;">Link Preview:</div>
+                                <div style="word-break: break-all; font-size: 12px;">${url.substring(0, 100)}${url.length > 100 ? '...' : ''}</div>
                             </div>
                         `;
                     }
@@ -435,11 +456,12 @@
             });
         }
 
-        // ========== PUBLISH FUNCTION ==========
+        // ========== PUBLISH FUNCTION WITH ALERT ==========
         async function publishContent() {
             // Check post limit
             if (userPostCount >= MAX_POSTS_PER_DAY) {
                 showStatus('Daily posting limit reached', 'error');
+                playErrorSound();
                 return;
             }
             
@@ -452,11 +474,13 @@
             // Validate required fields
             if (!title) {
                 showStatus('Title is required', 'error');
+                playErrorSound();
                 return;
             }
             
             if (!url) {
                 showStatus('URL is required', 'error');
+                playErrorSound();
                 return;
             }
             
@@ -465,12 +489,14 @@
                 new URL(url);
             } catch (error) {
                 showStatus('Invalid URL format', 'error');
+                playErrorSound();
                 return;
             }
             
             // Validate URL length
             if (url.length > 2000) {
                 showStatus('URL is too long', 'error');
+                playErrorSound();
                 return;
             }
             
@@ -492,7 +518,7 @@
                     keywords: keywords,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                     userId: auth.currentUser?.uid || 'anonymous',
-                    ip: 'unknown', // Note: IP can't be reliably obtained client-side
+                    ip: 'unknown',
                     reports: 0,
                     views: 0,
                     downloads: 0
@@ -504,9 +530,8 @@
                 // Update post count
                 incrementPostCount();
                 
-                // Show success with sound alert
-                showStatus('Content published successfully!', 'success');
-                playSuccessSound();
+                // Show success with alert
+                showPublishSuccess(docRef.id);
                 
                 // Reset form
                 document.getElementById('publishForm').reset();
@@ -520,6 +545,7 @@
             } catch (error) {
                 console.error('Publish error:', error);
                 showStatus('Error publishing content. Please try again.', 'error');
+                playErrorSound();
             }
         }
 
@@ -542,34 +568,98 @@
             return [...new Set(filteredWords)].slice(0, 20);
         }
 
+        function showPublishSuccess(postId) {
+            const status = document.getElementById('statusMessage');
+            status.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    ✅ <strong>CONTENT PUBLISHED SUCCESSFULLY!</strong>
+                </div>
+                <div style="font-size: 12px; color: #0f0; margin-bottom: 10px;">
+                    Post ID: ${postId.substring(0, 8)}...
+                </div>
+                <div style="font-size: 11px; color: #ccc;">
+                    Your content is now live on the main feed!
+                </div>
+            `;
+            status.className = 'status success';
+            status.style.display = 'block';
+            
+            // Play success sound
+            playSuccessSound();
+            
+            // Show browser notification if supported
+            showBrowserNotification();
+        }
+
         function playSuccessSound() {
             try {
-                // Create a simple beep sound
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
-                
-                // Also show browser notification if supported
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Content Published', {
-                        body: 'Your content has been published successfully!',
-                        icon: 'https://i.postimg.cc/W1Jg7yv0/leakstream-removebg-preview.png'
-                    });
+                // Create simple beep sound
+                if (publishSound) {
+                    const oscillator = publishSound.createOscillator();
+                    const gainNode = publishSound.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(publishSound.destination);
+                    
+                    oscillator.frequency.value = 1000;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.3, publishSound.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, publishSound.currentTime + 0.5);
+                    
+                    oscillator.start(publishSound.currentTime);
+                    oscillator.stop(publishSound.currentTime + 0.5);
+                } else {
+                    // Fallback to HTML5 audio
+                    const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
+                    audio.volume = 0.3;
+                    audio.play().catch(() => {});
                 }
             } catch (error) {
-                // Sound is optional, just ignore errors
+                // Sound is optional
+            }
+        }
+
+        function playErrorSound() {
+            try {
+                if (publishSound) {
+                    const oscillator = publishSound.createOscillator();
+                    const gainNode = publishSound.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(publishSound.destination);
+                    
+                    oscillator.frequency.value = 400;
+                    oscillator.type = 'sawtooth';
+                    
+                    gainNode.gain.setValueAtTime(0.3, publishSound.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, publishSound.currentTime + 0.3);
+                    
+                    oscillator.start(publishSound.currentTime);
+                    oscillator.stop(publishSound.currentTime + 0.3);
+                }
+            } catch (error) {
+                // Sound is optional
+            }
+        }
+
+        function showBrowserNotification() {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('✅ Content Published!', {
+                    body: 'Your post is now live on the main feed.',
+                    icon: 'https://i.postimg.cc/W1Jg7yv0/leakstream-removebg-preview.png',
+                    tag: 'publish-success'
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification('✅ Content Published!', {
+                            body: 'Your post is now live on the main feed.',
+                            icon: 'https://i.postimg.cc/W1Jg7yv0/leakstream-removebg-preview.png',
+                            tag: 'publish-success'
+                        });
+                    }
+                });
             }
         }
 
